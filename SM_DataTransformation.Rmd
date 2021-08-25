@@ -1,6 +1,149 @@
 ---
-title: "SM_DataTransformation"
+title: "Survey Monkey - Data Transformation"
 author: "Vish"
-date: "25/08/2021"
+date: "24/08/2021"
 output: html_document
 ---
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(readxl)
+library(openxlsx)#write to excel 
+```
+
+
+```{r}
+pwd <- getwd()
+pwd
+```
+```{r}
+data_import.T <- read_excel("Data - Survey Monkey Output Edited.xlsx" , sheet = "Edited_Data")
+#kable(head(data_import, n = 5))
+```
+
+```{r}
+dataset_modified.T <- data_import.T # Make a copy of the dataframe
+#head(dataset_modified) # R seems to add "." to my column names
+colnames(dataset_modified.T)
+```
+
+```{r}
+columns_to_drop.T <- c('Start Date', 'End Date', 'Email Address', 'First Name', 'Last Name', 'Custom Data 1')
+columns_to_drop.T
+```
+
+```{r}
+dataset_modified.T <- select(dataset_modified.T,-(columns_to_drop.T)) 
+#head(dataset_modified) 
+dim(dataset_modified.T)
+```
+
+```{r}
+id_vars.T <- colnames(dataset_modified.T)[1:8] # Install the reshape2 package, R uses 1 based indexing
+id_vars.T
+```
+```{r}
+dataset_melted.T <- dataset_modified.T %>% 
+  gather("Question.+.Subquestion", "Answer", -id_vars.T)
+
+
+#head(dataset_melted)
+dim(dataset_melted.T)
+```
+
+```{r}
+questions_import.T <- read_excel("Data - Survey Monkey Output Edited.xlsx", sheet="Question")
+#head(questions_import)
+```
+
+```{r}
+questions.T <- questions_import.T
+#head(questions)
+dim(questions.T)
+str(questions.T)
+```
+
+```{r}
+
+dataset_merged.T <- left_join(dataset_melted.T,questions.T, 
+                              by= c("Question.+.Subquestion" = "Question + Subquestion"))
+  
+#head(dataset_merged)
+dim(dataset_merged.T)
+```
+
+```{r}
+respondents.T <- dataset_merged.T %>% 
+  filter(!is.na(Answer))
+  
+
+
+dim(respondents.T)
+```
+```{r}
+respondents.T1 <- respondents.T %>% 
+    group_by(Question) %>% 
+  summarise(number_of_distinct_answers = n_distinct(`Respondent ID`))
+    
+
+
+
+dim(respondents.T1)
+str(respondents.T1)
+```
+
+```{r}
+dataset_merged_two.T <- left_join(dataset_merged.T, respondents.T1, 
+                                  by =c("Question"= "Question"))
+  
+dim(dataset_merged_two.T)
+```
+
+```{r}
+same_answer.T <- dataset_merged.T %>% 
+  filter(!is.na(Answer))
+dim(same_answer.T)
+```
+
+
+```{r}
+same_answer.T1 <- same_answer.T %>% 
+ group_by(`Question.+.Subquestion`, Answer) %>% 
+  summarise(number_of_same_answer = n_distinct(`Respondent ID`))
+    
+
+dim(same_answer.T1)
+#head(same_answer)
+```
+```{r}
+dataset_merged_three.T <- left_join(dataset_merged_two.T, same_answer.T1, 
+                                  by=c('Question.+.Subquestion', 'Answer'))
+  
+dim(dataset_merged_three.T)
+```
+
+```{r}
+colnames(dataset_merged_three.T)
+```
+
+```{r}
+dataset_merged_three.T <- dataset_merged_three.T %>% 
+  rename("Division" =`Identify which division you work in. - Response` ,
+          "Division Other"=`Identify which division you work in. - Other (please specify)`,
+          "Position"=`Which of the following best describes your position level? - Response` ,
+          "Generation"=`Which generation are you apart of? - Response`,
+          "Gender"=`Please select the gender in which you identify. - Response`,
+          "Tenure"=`Which duration range best aligns with your tenure at your company? - Response`,
+          "EmploymentType"=`Which of the following best describes your employment type? - Response`,
+          "Respondents"=number_of_distinct_answers ,
+          "SameAnswer"=number_of_same_answer)
+```
+
+
+```{r}
+
+write.xlsx(dataset_merged_three.T, paste(pwd , "/Final_Output_R_T.xlsx", sep=""))
+```
+
+
