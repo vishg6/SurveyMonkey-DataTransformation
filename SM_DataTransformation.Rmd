@@ -2,16 +2,26 @@
 title: "Survey Monkey - Data Transformation"
 author: "Vish"
 date: "24/08/2021"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
-```{r}
+The following is my method of data transformation of SurveyMonkey. The methodology is from 
+Shashank Kalanith. Please watch his video first __[Day in the Life of a Data Analyst - SurveyMonkey Data Transformation (Using R)](https://youtu.be/25Vko7udQ-g)__. To get the original files please visit his github __[kshashank03](https://github.com/kshashank03/Survey-Monkey-Tutorial)__.
+
+*** 
+
+```{r message=FALSE, warning=FALSE}
 library(dplyr)#data manipulating
 library(tidyr)#to gather data (melt)
 library(readxl)#to read xlsx files
 library(openxlsx)#write to excel 
 ```
 
+
+
+## Uploading File
 
 ```{r}
 pwd <- getwd()
@@ -25,6 +35,7 @@ data_import.T <- read_excel("Data - Survey Monkey Output Edited.xlsx" , sheet = 
 dataset_modified.T <- data_import.T # Make a copy of the dataframe
 colnames(dataset_modified.T)
 ```
+## Remove Unwanted Columns
 
 ```{r}
 columns_to_drop.T <- c('Start Date', 'End Date', 'Email Address', 'First Name', 'Last Name', 'Custom Data 1')
@@ -40,7 +51,9 @@ dim(dataset_modified.T)
 id_vars.T <- colnames(dataset_modified.T)[1:8] 
 id_vars.T
 ```
-Melts all column after the first 8 columns. Using ```gather``` from tidyr
+## Transpose Columns
+
+Melts all columns after the first 8 columns. Using ```gather``` from tidyr.
 
 ```{r}
 dataset_melted.T <- dataset_modified.T %>% 
@@ -59,6 +72,8 @@ questions.T <- questions_import.T
 dim(questions.T)
 str(questions.T)
 ```
+## Joining Tables
+
 Join two datasets tables using ```left_join``` from dplyr library.
 
 ```{r}
@@ -67,7 +82,9 @@ dataset_merged.T <- left_join(dataset_melted.T,questions.T,
   
 dim(dataset_merged.T)
 ```
-Filter all na Answers. 
+## Find Number of Unique Respondents
+
+Filter all ```na``` Answers. 
 
 ```{r}
 respondents.T <- dataset_merged.T %>% 
@@ -93,6 +110,7 @@ dataset_merged_two.T <- left_join(dataset_merged.T, respondents.T1,
   
 dim(dataset_merged_two.T)
 ```
+## Find Number of Same Answers
 
 ```{r}
 same_answer.T <- dataset_merged.T %>% 
@@ -121,7 +139,7 @@ dim(dataset_merged_three.T)
 ```{r}
 colnames(dataset_merged_three.T)
 ```
-Renaming columns. 
+## Rename Columns and Export File
 
 ```{r}
 dataset_merged_three.T <- dataset_merged_three.T %>% 
@@ -140,7 +158,7 @@ Exporting transformed data.
 
 ```{r}
 
-write.xlsx(dataset_merged_three.T, paste(pwd , "/Final_Output_R_T.xlsx", sep=""))
+write.xlsx(dataset_merged_three.T, paste(pwd , "/Final_Output_R_T1.xlsx", sep=""))
 ```
 
 
