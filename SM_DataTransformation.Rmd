@@ -40,6 +40,8 @@ dim(dataset_modified.T)
 id_vars.T <- colnames(dataset_modified.T)[1:8] 
 id_vars.T
 ```
+Melts all column after the first 8 columns. Using ```gather``` from tidyr
+
 ```{r}
 dataset_melted.T <- dataset_modified.T %>% 
   gather("Question.+.Subquestion", "Answer", -id_vars.T)
@@ -57,14 +59,15 @@ questions.T <- questions_import.T
 dim(questions.T)
 str(questions.T)
 ```
+Join two datasets tables using ```left_join``` from dplyr library.
 
 ```{r}
-
 dataset_merged.T <- left_join(dataset_melted.T,questions.T, 
                               by= c("Question.+.Subquestion" = "Question + Subquestion"))
   
 dim(dataset_merged.T)
 ```
+Filter all na Answers. 
 
 ```{r}
 respondents.T <- dataset_merged.T %>% 
@@ -72,14 +75,17 @@ respondents.T <- dataset_merged.T %>%
 
 dim(respondents.T)
 ```
+To find the unique respondents for each question we use ```group_by``` followed by ```n_distinct``` on the Respondent ID
+
 ```{r}
 respondents.T1 <- respondents.T %>% 
     group_by(Question) %>% 
-  summarise(number_of_distinct_answers = n_distinct(`Respondent ID`))
+    summarise(number_of_distinct_answers = n_distinct(`Respondent ID`))
     
 dim(respondents.T1)
 str(respondents.T1)
 ```
+We now merge the two tables so the number of unique respondents are shown along side the question. 
 
 ```{r}
 dataset_merged_two.T <- left_join(dataset_merged.T, respondents.T1, 
@@ -93,7 +99,7 @@ same_answer.T <- dataset_merged.T %>%
   filter(!is.na(Answer))
 dim(same_answer.T)
 ```
-
+To find the same answers for each question we use ```group_by``` on both Question+Subquestion and  Answer followed by ```n_distinct``` on the Respondent ID
 
 ```{r}
 same_answer.T1 <- same_answer.T %>% 
@@ -103,7 +109,7 @@ same_answer.T1 <- same_answer.T %>%
 
 dim(same_answer.T1)
 ```
-
+Now merge the same answer table with the dataset. We use the columns 'Question.+.Subquestion' and 'Answer'  as matching columns.
 
 ```{r}
 dataset_merged_three.T <- left_join(dataset_merged_two.T, same_answer.T1, 
@@ -115,6 +121,7 @@ dim(dataset_merged_three.T)
 ```{r}
 colnames(dataset_merged_three.T)
 ```
+Renaming columns. 
 
 ```{r}
 dataset_merged_three.T <- dataset_merged_three.T %>% 
@@ -129,6 +136,7 @@ dataset_merged_three.T <- dataset_merged_three.T %>%
           "SameAnswer"=number_of_same_answer)
 ```
 
+Exporting transformed data. 
 
 ```{r}
 
